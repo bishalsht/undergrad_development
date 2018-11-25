@@ -1,0 +1,114 @@
+                                UNIX System Calls
+
+     GENERAL CLASS              SPECIFIC CLASS                 SYSTEM CALL
+     ---------------------------------------------------------------------
+     File Structure             Creating a Channel             creat()
+     Related Calls                                             open()
+                                                               close()
+                                Input/Output                   read()
+                                                               write()
+                                Random Access                  lseek()
+                                Channel Duplication            dup()
+                                Aliasing and Removing          link()
+                                Files                          unlink()
+                                File Status                    stat()
+							       lstat()
+                                                               fstat()
+                                Access Control                 access()
+                                                               chmod()
+                                                               chown()
+                                                               umask()
+                                Device Control                 ioctl()
+							       fcntl()
+     ---------------------------------------------------------------------
+     Process Related            Process Creation and           exec()
+     Calls                      Termination                    fork()
+                                                               wait()
+                                                               exit()
+                                Process Owner and Group        getuid()
+                                                               geteuid()
+                                                               getgid()
+                                                               getegid()
+                                Process Identity               getpid()
+                                                               getppid()
+                                Process Control                signal()
+                                                               kill()
+                                                               alarm()
+                                Change Working Directory       chdir()
+     ----------------------------------------------------------------------
+     Interprocess               Pipelines                      pipe()
+     Communication              Messages                       msgget()
+                                                               msgsnd()
+                                                               msgrcv()
+                                                               msgctl()
+                                Semaphores                     semget()
+                                                               semop()
+                                Shared Memory                  shmget()
+                                                               shmat()
+                                                               shmdt()
+     ----------------------------------------------------------------------
+
+     "exec" family of system calls.  The prototypes for these calls are:
+
+     int execl(file_name, arg0 [, arg1, ..., argn], NULL)
+     char *file_name, *arg0, *arg1, ..., *argn;
+
+     int execv(file_name, argv)
+     char *file_name, *argv[];
+
+     int execle(file_name, arg0 [, arg1, ..., argn], NULL, envp)
+     char *file_name, *arg0, *arg1, ..., *argn, *envp[];
+
+     int execve(file_name, argv, envp)
+     char *file_name, *argv[], *envp[];
+
+     int execlp(file_name, arg0 [, arg1, ..., argn], NULL)
+     char *file_name, *arg0, *arg1, ..., *argn;
+
+     int execvp(file_name, argv)
+     char *file_name, *argv[];
+
+     Letters added to the end of exec indicate the type of arguments:
+        l  argn is specified as a list of arguments.
+        v  argv is specified as a vector (array of character pointers).
+        e  environment is specified as an array of character pointers.
+        p  user's PATH is searched for command, and command can be a shell program
+
+     extern  DIR *opendir();
+     extern  struct direct *readdir();
+     extern  long telldir();
+     extern  void seekdir();
+     #define rewinddir(dirp) seekdir((dirp), (long)0)
+     extern  void closedir();
+
+	nice();
+#include <sys/time.h>
+Int setitimer(int which, struct itemerval *val, struct itimerval *oval);
+Int alarm(unsigned int seconds);
+Int kill (int pid, int sig);
+Int Sigaction ( int signum, const struct sigaction *act, struct sigaction *oldact);
+Sigprocmask(int how, sigset_t *set, sigset_t *oldset);
+Howto: SIG_BLOCK, SIG_SETMASK, SIG_UNBLOCK
+Int sigemptyset(sigset_t *set);
+Int sigfillset(sigset_t *set);
+Int sigaddset(sigset_t *set, int signo);
+Int sigdelset(sigset_t *set, int signo);
+Int sigismember(sigset_t *set, int signo);
+Int (signal(int sig, void (*func)(int)))(int)
+Int Signal (SIGUSR1, SIG_IGN);
+
+Int Sigvec(int sig, struct sigvec *vec, struct sigvec *ovec)
+Int sigmask(int signum);
+Int sigblock(int mask);
+Int sigsetmask(int mask);
+Int siggetmask(void);
+Int sigpause(int sigmask); | BSD
+                    (int signo); | SVR
+Int sighold(int sig);
+Int sigrelse(int sig);
+Int raise(int sig);
+
+Getitemer(int which, struct itimerval *val);
+Setpgrp(); 	// SVR
+Setpgrp(pid, pgrp);	// BSD
+	

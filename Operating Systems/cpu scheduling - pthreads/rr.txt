@@ -1,0 +1,125 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/sem.h>
+#include <pthread.h>
+#include <semaphore.h>
+
+#define QUEUELENGTH 5
+#define TIME_SLICE 2
+
+sem_t resources_ready;		
+sem_t process_ready;	
+pthread_mutex_t access_seats = PTHREAD_MUTEX_INITIALIZER, dummy_mutex = PTHREAD_MUTEX_INITIALIZER, processWait = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t resources_busy = PTHREAD_COND_INITIALIZER;	
+int free_seats = QUEUELENGTH;
+
+int current_time = 0;
+
+typedef struct processDetails{
+	int id;
+	int arrival_time;
+	int burst_time;
+} processDetails;
+
+void resources()
+{
+	while(1)
+	{
+		sem_wait(&process_ready);	
+		pthread_mutex_lock(&access_seats);	
+			free_seats += 1;
+			sem_post(&resources_ready);	
+		pthread_mutex_unlock(&access_seats);	
+		
+		// printf("The resources is cutting\n");
+		
+		
+		pthread_mutex_lock(&dummy_mutex);
+		pthread_cond_wait(&resources_busy , &dummy_mutex);
+		pthread_mutex_unlock(&dummy_mutex);
+	}
+}
+
+void process(void *args)
+{
+	processDetails prcss = *(processDetails*)args;
+	printf("Process %d enqueued at %d seconds\n", prcss.id, prcss.arrival_time);
+	while(prcss.burst_time)
+	{
+
+		pthread_mutex_lock(&access_seats);	
+		if(free_seats>0)
+		{
+			free_seats--;	
+			sem_post(&process_ready);	
+			pthread_mutex_unlock(&access_seats);
+			sem_wait(&resources_ready);	
+			printf("Process %d execution started\n", prcss.id);
+			//sleep(prcss.burst_time);
+			if (prcss.burst_time>TIME_SLICE) 
+			{
+				sleep(TIME_SLICE);
+				prcss.burst_time=prcss.burst_time-TIME_SLICE;
+				printf("Process %d halted and enqueued after %d seconds\n", prcss.id, TIME_SLICE);
+			}
+			else 
+			{
+				sleep(prcss.burst_time);
+				prcss.burst_time=0;
+			}
+			if (!prcss.burst_time)
+				printf("Process %d finished execution\n", prcss.id);
+			pthread_cond_signal(&resources_busy);	
+			if (pthread_mutex_trylock(&processWait)) pthread_mutex_unlock(&processWait);
+			else pthread_mutex_unlock(&processWait);
+		}
+		else
+		{
+			pthread_mutex_unlock(&access_seats);	
+			pthread_mutex_lock(&processWait);
+		}
+				sem_wait(&process_ready);
+				printf("Process %d dequeued\n", prcss.id);
+		// sleep(4);	
+	}
+}
+
+void time_handle(void)
+{
+	while(1)
+	{
+		sleep(1);
+		current_time++;
+	}
+}
+
+int main()
+{
+	int i, id[QUEUELENGTH+2];
+	
+	sem_init(&resources_ready, 0, 0);	
+	sem_init(&process_ready, 0, 0);	
+	
+	pthread_t brbr, processes[1000], time_mgmt;	
+	pthread_attr_t brbr_attr;
+	
+	pthread_attr_init(&brbr_attr);
+	pthread_create(&brbr, &brbr_attr, (void*)&resources, 0);
+	pthread_create(&time_mgmt, NULL, (void*)*time_handle,NULL);
+
+	for(i=0 ; i<1000 ; ++i)
+	{
+		int tmp;
+		tmp = rand()%7;
+		sleep(tmp);
+		pthread_mutex_lock(&processWait);
+		processDetails temp;
+		temp.arrival_time = current_time;
+		temp.burst_time = rand()%10;
+		temp.id = i+1;
+		pthread_create(&processes[i], NULL, (void*)&process, (void*)(&temp));
+		pthread_mutex_unlock(&processWait);
+	}
+	pthread_join(processes[0], NULL);
+	return 0;
+}
